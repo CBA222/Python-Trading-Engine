@@ -6,8 +6,10 @@ Created on Tue Mar 20 21:45:43 2018
 """
 
 import copy
-from orderhandler import OrderEvent
+import pandas_market_calendars as mcal
+from event import OrderEvent
 import math
+import pandas as pd
 
 class Portfolio:
     
@@ -39,7 +41,7 @@ class Portfolio:
         def update(self, price):
             self.price = price
     
-class DumbPortfolio(Portfolio):
+class SimplePortfolio(Portfolio):
     
     def __init__(self, starting_capital):
         """
@@ -51,57 +53,70 @@ class DumbPortfolio(Portfolio):
         
         """
         
-        self.all_holdings = []
-        self.current_holdings = {}
-        self.all_cash = []
+        self.all_holdings = {}
         self.current_cash = 0
         self.starting_capital = starting_capital
         self.default_quantity = 1
-        #self.cash = cash
         
+        self.positions = []
         
     def setup(self):
         #create initial holdings
-        self.all_holdings.append({})
+
+        date_idx = self.bars.date_idx
+        self.symbol_list = self.bars.data.sel(fields='close').to_pandas().index
         
-        for s in self.bars.symbols:
-            self.all_holdings[-1][s] = {'DateTime':None,'Quantity':0,'Price':0}
-            self.current_holdings[s] = {'DateTime':None,'Quantity':0,'Price':0}
-            
-        self.all_cash.append(self.starting_capital)
+        self.all_holdings['Quantity'] = pd.DataFrame(0, index = date_idx, columns = self.symbol_list)   
+        self.all_holdings['Price'] = pd.DataFrame(0, index = date_idx, columns = self.symbol_list) 
+        self.all_cash = pd.Series(0, index = date_idx)
+        self.curr_pos = 0
+        
+        self.current_holdings = pd.Series(0, index = self.symbol_list)
         self.current_cash = self.starting_capital
         
+        self.returns = pd.Series(0.0, index = date_idx)
+        self.history = pd.Series(0.0, index = date_idx)
+        
+        self.total_returns = pd.Series(0.0, index = date_idx)
         
     def update_holdings(self):
         """
         Updates the prices for the Portfolio's holdings according to current market close
         
-        all_holdings contains all previos holdings + current_holdings
+        all_holdings contains all previous holdings + current_holdings
         
         This function creates a new current_holding based on current prices and appends it to all_holdings
         """
         
-        new_holdings = copy.deepcopy(self.current_holdings)
+        self.all_holdings['Quantity'].iloc[self.curr_pos] = self.current_holdings
+        self.all_holdings['Price'].iloc[self.curr_pos] = self.bars.current(self.symbol_list, 'adj_close')
+        self.all_cash[self.curr_pos] = self.current_cash
         
-        for symbol,cost in new_holdings.items():
-            new_holdings[symbol]['Price'] = self.bars.current(symbol, 'adj_close').item()
-            new_holdings[symbol]['DateTime'] = ""
+        self.total_returns[self.curr_pos] = (100 * (self.calculate_total_value() / self.starting_capital)) - 100
+        
+        self.history[self.curr_pos] = self.calculate_total_value()
+        if self.curr_pos > 0:
+            prev = self.history[self.curr_pos - 1]
+            self.returns[self.curr_pos] = self.history[self.curr_pos] / prev
             
-        self.current_holdings = new_holdings
-        self.all_holdings.append(self.current_holdings)
-        self.all_cash.append(self.current_cash)
+        self.curr_pos += 1
+        
         
     def update_fill(self, event):
-        if event.type is 'FILL':
-            dir = 0
-            if event.direction is 'LONG':
-                dir = 1
-            elif event.direction is 'SHORT':
-                dir = -1
-            
-            self.current_holdings[event.symbol]['Quantity'] += event.quantity*dir 
-            self.current_cash -= event.value*dir
-            self.current_cash -= event.commission
+        
+        if event.type != 'FILL':
+            return
+        
+        direction = 0
+        if event.quantity >= 0:
+            direction = 1
+        elif event.quantity < 0:
+            direction = -1
+        
+        self.current_holdings.loc[event.symbol] += (event.quantity)
+        self.current_cash -= event.value * direction
+        self.current_cash -= event.commission
+        
         
     def update_orders(self, event):
         
@@ -110,7 +125,7 @@ class DumbPortfolio(Portfolio):
                 
         to_buy = 0
         curr_price = self.bars.current(event.symbol, 'adj_close').item()
-        curr_quantity = self.current_holdings[event.symbol]['Quantity']
+        curr_quantity = self.current_holdings.loc[event.symbol]
         
         if event.amount_type == 'SHARES':
             if event.target == False:
@@ -136,7 +151,7 @@ class DumbPortfolio(Portfolio):
         else:
             print('Error: invalid amount_type specified, should be SHARES, VALUE, or PERCENTAGE')
             return
-        
+
         if math.isnan(to_buy):
             to_buy = 0
         to_buy = (int)(to_buy)
@@ -155,14 +170,12 @@ class DumbPortfolio(Portfolio):
         """
         calculates portfolio value(all open positions) at particular time
         """
-        
-        value = 0
-        for symbol,cost in self.current_holdings.items():
-            if not math.isnan(self.current_holdings[symbol]['Price']):
-                value += (self.current_holdings[symbol]['Price']*self.current_holdings[symbol]['Quantity'])
-                
+        value = (self.current_holdings * self.bars.current(self.symbol_list, 'adj_close')).sum()
         return value
-                
+    
+    def open_positions(self):
+        return pd.concat([self.current_holdings.loc[self.current_holdings > 0],
+                         self.current_holdings.loc[self.current_holdings < 0]])
                 
                 
                 
