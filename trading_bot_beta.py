@@ -6,39 +6,47 @@ Created on Wed Mar 21 00:07:37 2018
 """
 
 from trader import Trader
-from datafeed import DataFeed, CSVDataFeed
-from strategy import TestStrategy,Momentum,BuyHold
-from portfolio import DumbPortfolio
+from datafeed import CSVDataFeed
+from example_strategies import BuyHold, TestSchedule
 import pandas as pd
+from mom_strategy import MomentumStrat
 
 import os
 
 if __name__ == '__main__':
     
-    trader = Trader()
+    strategy_list = {0: BuyHold(), 
+                     1: MomentumStrat(),
+                     2: TestSchedule()}
     
-    file = pd.read_csv('tickers.txt', sep=',')
-    symbols = set()
-    for row in file.itertuples():
-        symbols.add(row[1])
+    path = os.path.dirname(os.path.realpath(__file__))
+    subdirs = next(os.walk(path))[1]
     
-    #path = os.getcwd()
-    path = 'C:\\Users\\blins\\Documents\\Projects\\Custom Backtest Engine\\data'
-    data = CSVDataFeed(path, trader.events, symbols)
+    try:
+        idx = subdirs.index('data')
+        data_path = os.path.join(path, subdirs[idx])
+
+        trader = Trader()
     
-    trader.add_data(data)
-    trader.add_strategy(BuyHold())
-    trader.set_portfolio(DumbPortfolio(10000))
+        file = pd.read_csv('tickers.txt', sep=',')
+        symbols = set()
+        for row in file.itertuples():
+            symbols.add(row[1])
+        
+        data = CSVDataFeed(data_path, trader.events, symbols)
+        
+        trader.add_data(data)
+        trader.add_strategy(strategy_list[1])
+        trader.set_starting_cash(50000)
+        trader.set_run_settings(log_orders = False)
+        
+        trader.run()
+        
+    except ValueError:
+        print('Error: data subfolder not found')
     
-    trader.set_commission(5)
     
-    trader.run()
     
-    print('Final Portfolio Value: %s' % trader.portfolio.calculate_portfolio_value())
-    print('Final Cash Value: %s' % trader.portfolio.current_cash)
-    total = trader.portfolio.calculate_portfolio_value() + trader.portfolio.current_cash
-    print("Total Value: ",total)
-    print("Absolute Return: " , ((total/10000)*100)-100, '%')
     
     
     

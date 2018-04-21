@@ -5,8 +5,11 @@ Created on Wed Apr 18 23:15:20 2018
 @author: blins
 """
 
-class Commission(object):
+import abc
+
+class Commission(object, metaclass = abc.ABCMeta):
     
+    @abc.abstractclassmethod
     def get_commission(self, shares, share_price):
         pass
 

@@ -5,22 +5,21 @@ Created on Tue Mar 20 23:19:22 2018
 @author: blins
 """
 
-import datetime
-#import Queue
-
-from queue import *
-
-from abc import ABCMeta, abstractmethod
-
-from event import FillEvent, OrderEvent
+from queue import Queue
+from event import FillEvent
 from commission import IBCommission
 
+import abc
 import math
 
-class OrderHandler(object):
+class OrderHandler(object, metaclass=abc.ABCMeta):
     
-    @abstractmethod
-    def execute_order(self, event):
+    @abc.abstractmethod
+    def execute_pending(self, event):
+        pass
+    
+    @abc.abstractmethod
+    def send_order(self, event):
         pass
     
 class SimpleOrderHandler(OrderHandler):
@@ -34,15 +33,16 @@ class SimpleOrderHandler(OrderHandler):
         self.events = events
         self.commission = commission
         self.pending_orders = Queue()
-        self.data = data
-        
+        self.data = data        
         self.exchange = 'NYSE'
-    
-    def execute_order(self, event):
-        if event.type == 'ORDER':
-            #fill_order = FillEvent(0,event.symbol,'NYSE',1,event.direction,value,self.commission)
-            #self.events.put(fill_order)
-            pass
+        self.log_orders = False
+        self.interval = 0
+        
+    def activate_logging(self):
+        self.log_orders = True
+        
+    def deactivate_logging(self):
+        self.log_orders = False
             
     def send_order(self, event):
         if event.type == 'ORDER':
@@ -58,7 +58,7 @@ class SimpleOrderHandler(OrderHandler):
                 price = self.data.current(order.symbol,fields='adj_close').item()
                 if not math.isnan(price):
                     value = price * order.quantity #next/current time closing price
-                    fill_order = FillEvent(0,
+                    fill_order = FillEvent(self.interval,
                                            order.symbol,
                                            self.exchange,
                                            order.quantity,
@@ -66,7 +66,8 @@ class SimpleOrderHandler(OrderHandler):
                                            value,
                                            self.commission.get_commission(order.quantity, price))
                     self.events.put(fill_order)
-                    print(order.symbol,order.quantity,order.direction, value)
+                    if self.log_orders == True:
+                        print(order.symbol,order.quantity,order.direction, value)
                 
                 
                 

@@ -14,6 +14,15 @@ import xarray as xr
 import abc
 
 from event import MarketEvent
+from interval import Interval
+from utils.timestarts import get_month_starts, get_week_starts
+
+INTERVALS = {
+        '1_DAY': Interval('1d'),
+        '1_HOUR': Interval('1h'),
+        '1_MIN': Interval('1m'),
+        '1_SEC': Interval('1s')
+        }
 
 class DataFeed(object, metaclass=abc.ABCMeta):
     """
@@ -33,21 +42,31 @@ class DataFeed(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod    
     def update(self):
         raise NotImplementedError("Should implement update_bars()")
+        
+    @abc.abstractclassmethod
+    def current_date(self):
+        raise NotImplementedError("Should implement current_date(()")
 
         
 class CSVDataFeed(DataFeed):
     
-    def __init__(self, path, events, symbols, time = 0, open = 1, high = 2, low = 3, close = 4, volume = 5):
+    def __init__(self, path, events, symbols, interval = INTERVALS['1_DAY'], 
+                 open = 1, high = 2, low = 3, close = 4, volume = 5):
         self.path = path
         self.events = events
         self.symbols = symbols
+        self.fields = ['open','high','low','close','adj_close','volume']
+        self.interval = interval
 
         self.keep_iterating = True
         self.data_length = 0
-        self.start_date = dt.date(2018, 1, 1)
-        self.end_date = dt.date(2018, 3, 1)
+        self.default_start_date = dt.date(2018, 1, 1)
+        self.default_end_date = dt.date(2018, 3, 1)
         
-        #self.read_from_csv()
+        self.hard_start = dt.date(1995, 1, 1)
+        self.hard_stop = dt.date(2020, 1, 1)
+        self.read_from_csv()
+        
         
     def set_start_date(self, date):
         self.start_date = date
@@ -55,14 +74,24 @@ class CSVDataFeed(DataFeed):
     def set_end_date(self, date):
         self.end_date = date
         
+    def set_index(self, start, end):
+        schedule = mcal.get_calendar('NYSE').schedule(start_date=start, end_date=end)
+        idx = mcal.date_range(schedule, frequency='1d').to_period('1d').to_timestamp()
+        self.data = self.data.reindex(datetime = idx)
+        self.date_idx = idx
+        self.total_length = self.data.sizes['datetime']
+        
+        self.starts = dict()
+        self.starts['month'] = get_month_starts(self.date_idx)
+        self.starts['week'] = get_week_starts(self.date_idx)
+        
     def read_from_csv(self):
         not_found = []
         data_list = []
         data_names = []
         
-        schedule = mcal.get_calendar('NYSE').schedule(start_date=self.start_date, end_date=self.end_date)
+        schedule = mcal.get_calendar('NYSE').schedule(start_date=self.hard_start, end_date=self.hard_stop)
         date_idx = mcal.date_range(schedule, frequency='1d').to_period('1d').to_timestamp()
-        self.date_idx = date_idx
         
         for s in self.symbols:
             try:
@@ -84,12 +113,15 @@ class CSVDataFeed(DataFeed):
             self.symbols.remove(s)
             
         self.data = xr.concat(data_list, dim = pd.Index(data_names).set_names('assets'))
-        self.total_length = self.data.sizes['datetime']
         
     def history(self, assets, fields, bar_count, interval = '1d', convert_to_pandas = True):
         
+        #assets = [a for a in assets if a in set(self.symbols)]
+        #fields = [f for f in fields if f in set(self.fields)]
+        
         start = self.data_length - bar_count
         end = self.data_length
+        
         hist_data = self.data.isel(datetime=slice(start, end)).sel(fields=fields).sel(assets=assets)
         
         if convert_to_pandas is False:
@@ -99,12 +131,18 @@ class CSVDataFeed(DataFeed):
     
     def current(self, assets, fields, inteval = '1d', convert_to_pandas = True):
         
+        #assets = [a for a in assets if a in set(self.symbols)]
+        #fields = [f for f in fields if f in set(self.fields)]
+        
         curr_data = self.data.isel(datetime=self.data_length).sel(fields=fields).sel(assets=assets)
         
         if convert_to_pandas is False:
             return curr_data
         else:
             return curr_data.to_pandas()
+        
+    def current_date(self):
+        return self.date_idx[self.data_length]
     
     def update(self):
         

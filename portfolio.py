@@ -106,7 +106,13 @@ class SimplePortfolio(Portfolio):
         
         if event.type != 'FILL':
             return
-        
+        """
+        direction = 0
+        if event.direction is 'LONG':
+            direction = 1
+        elif event.direction is 'SHORT':
+            direction = -1
+        """
         direction = 0
         if event.quantity >= 0:
             direction = 1
@@ -114,7 +120,7 @@ class SimplePortfolio(Portfolio):
             direction = -1
         
         self.current_holdings.loc[event.symbol] += (event.quantity)
-        self.current_cash -= event.value * direction
+        self.current_cash -= event.value
         self.current_cash -= event.commission
         
         
@@ -124,7 +130,7 @@ class SimplePortfolio(Portfolio):
             return
                 
         to_buy = 0
-        curr_price = self.bars.current(event.symbol, 'adj_close').item()
+        curr_price = self.bars.current(event.symbol, 'adj_close')
         curr_quantity = self.current_holdings.loc[event.symbol]
         
         if event.amount_type == 'SHARES':
