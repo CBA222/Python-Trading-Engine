@@ -31,11 +31,12 @@ class Strategy(object, metaclass=abc.ABCMeta):
     def initial_code(self):
         pass
     
-    def set_params(self, bars, events, portfolio):
+    def set_params(self, bars, events, portfolio, engine):
         self.bars = bars
         self.symbols = bars.symbols
         self.events = events
         self.portfolio = portfolio
+        self.engine = engine
         
     def set_start_date(self, date):
         self.start_date = date

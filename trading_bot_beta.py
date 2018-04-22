@@ -8,9 +8,10 @@ Created on Wed Mar 21 00:07:37 2018
 from trader import Trader
 from datafeed import CSVDataFeed
 from example_strategies import BuyHold, TestSchedule
-import pandas as pd
 from mom_strategy import MomentumStrat
 
+import pandas as pd
+import datetime as dt
 import os
 
 if __name__ == '__main__':
@@ -37,8 +38,11 @@ if __name__ == '__main__':
         
         trader.add_data(data)
         trader.add_strategy(strategy_list[1])
-        trader.set_starting_cash(50000)
-        trader.set_run_settings(log_orders = False)
+        trader.set_run_settings(cash = 50000,
+                                log_orders = False,
+                                start = dt.date(2017, 1, 1),
+                                end = dt.date(2018, 1, 1)
+                                )
         
         trader.run()
         

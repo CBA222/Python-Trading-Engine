@@ -8,21 +8,21 @@ from strategy import Strategy
 from utils.schedulerule import every_month
 import datetime as dt
 
+from pipeline.pipeline import Pipeline
+from pipeline.factor import Returns
+
 class MomentumStrat(Strategy):
     
     def __init__(self):
         self.security_list = []
-        self.target_stocks = 20
+        self.target_stocks = 10
         self.target_leverage = 1.00
-        self.lookback = 90
+        self.lookback = 150
         
         self.time_passed = 0
         
     
-    def setup(self):
-        self.set_start_date(dt.date(2003, 10, 1))
-        self.set_end_date(dt.date(2018, 1, 1))
-        
+    def setup(self):       
         self.elapsed = 0
         self.frequency = 20
         
@@ -30,6 +30,14 @@ class MomentumStrat(Strategy):
         
         self.schedule_function(self.rebalance,
                                every_month())
+        
+        self.engine.add_pipeline(self.make_pipeline())
+        
+    def make_pipeline(self):
+        pipe = Pipeline('my_pipeline')
+        pipe.add_factor('returns', Returns(window_length = 150))
+        
+        return pipe
         
     def get_signals(self, event):
         
@@ -44,7 +52,7 @@ class MomentumStrat(Strategy):
             return
         
         hist = self.bars.history(self.security_list, 
-                                    fields = 'close', 
+                                    fields = 'adj_close', 
                                     bar_count=self.lookback, 
                                     convert_to_pandas = True)
         hist = hist.T
@@ -54,6 +62,9 @@ class MomentumStrat(Strategy):
         percent = self.target_leverage / self.target_stocks
         
         #num_to_buy = self.target_stocks - len(self.portfolio.open_positions())
+        
+        #self.long_list = self.engine.pipeline.table.sort_values(by='returns',
+        #                                                        ascending=False).iloc[0:self.target_stocks]
         
         for stock in self.long_list.index:
             if stock not in self.portfolio.open_positions().index:

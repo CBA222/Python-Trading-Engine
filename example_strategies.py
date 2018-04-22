@@ -18,8 +18,6 @@ class TestSchedule(Strategy):
         pass
     
     def setup(self):
-        self.set_start_date(dt.date(2015, 12, 1))
-        self.set_end_date(dt.date(2018, 3, 1))
         self.schedule_function(self.rebalance,
                                n_months(offset = 0, N = 1))
         

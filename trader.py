@@ -9,10 +9,16 @@ Created on Tue Mar 20 21:53:53 2018
 
 from orderhandler import SimpleOrderHandler
 from portfolio import SimplePortfolio
+from pipeline.inputs import Input
+from pipeline.pipedatafeed import PriceData
+from pipeline.pipelineengine import PipelineEngine
 import bokeh.plotting
 from queue import Queue
+import datetime as dt
 
 DEFAULT_CASH = 10000000
+DEFAULT_START = dt.date(2003, 1, 1)
+DEFAULT_END = dt.date(2018, 1, 1)
 
 class Trader(object):
     """
@@ -33,29 +39,40 @@ class Trader(object):
     def set_commission(self, commission):
         self.commission = commission
         
-    def set_portfolio(self, portfolio):
-        self.portfolio = portfolio
-        
-    def set_starting_cash(self, cash):
+    def set_run_settings(self, cash = DEFAULT_CASH, log_orders = False, start = DEFAULT_START, end = DEFAULT_END):
         self.starting_cash = cash
-        
-    def set_run_settings(self, log_orders = False):
         self.log_orders = log_orders
+        self.start_date = start
+        self.end_date = end
+        
+    def setup_pipeline_data(self, engine):
+        base_price_data = self.data.data
+        engine.input_datafeeds[Input.price_open] = PriceData(base_price_data.sel(fields='open').to_pandas())
+        engine.input_datafeeds[Input.price_high] = PriceData(base_price_data.sel(fields='high').to_pandas())
+        engine.input_datafeeds[Input.price_low] = PriceData(base_price_data.sel(fields='low').to_pandas())
+        engine.input_datafeeds[Input.price_close] = PriceData(base_price_data.sel(fields='close').to_pandas())
         
     def run(self):
         #setup
         print('Initialized')
+        self.data.set_index(self.start_date, self.end_date)
+        self.pipeline_engine = PipelineEngine(self.data.symbols)
+        self.setup_pipeline_data(self.pipeline_engine)
+        
         self.portfolio = SimplePortfolio(self.starting_cash)
         self.portfolio.set_params(self.events,self.data)
+        
         self.broker = SimpleOrderHandler(self.events,self.data)
         self.broker.log_orders = self.log_orders
         
-        self.strategy.set_params(self.data, self.events, self.portfolio)
+        self.strategy.set_params(self.data, self.events, self.portfolio, self.pipeline_engine)
         self.strategy.master_setup()
         self.strategy.setup()        
-        self.data.set_index(self.strategy.start_date, self.strategy.end_date)
-
+        
+        self.pipeline_engine.setup()
+        
         self.portfolio.setup()
+        
         
         while True:
             if self.data.keep_iterating == True:
@@ -70,6 +87,7 @@ class Trader(object):
                     event = self.events.get()
                     
                 if event.type == 'MARKET':
+                    self.pipeline_engine.update(event)
                     self.strategy.get_signals(event)
                     self.strategy.execute_scheduled_functions(event)
                     self.broker.execute_pending(event)

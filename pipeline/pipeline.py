@@ -5,50 +5,66 @@ Created on Wed Apr 18 15:55:50 2018
 @author: blins
 """
 
-import pandas as pd
+import pandas as pd        
 
-class Factor(object):
-    
-    def __init__(self, window_length):
-        pass
-    
-    def pass_data(self, inputs):
-        pass
-    
-    def calculate(self, *args, **kwargs):
-        
-        pass
-    
-class Returns(Factor):
-    
-    def __init__(self, window_length = 120):
-        self.window_length = window_length
-        
-    def calculate(self):
-        pass
     
 class Pipeline(object):
     
-    def __init__(self, bars, name):
-        self.pipe = pd.DataFrame()
-        self.factors = []
-        self.bars = bars
+    def __init__(self, name):
+        self.factors = {}
         self.name = name
-    
+        self.asset_list = []
+        self.screen = None
+        
     def set_screen(self, screen):
         self.screen = screen.loc[screen == True].index
         
-    def add_factor(self, factor):
-        self.factors.append(factor)
+    def add_factor(self, col_name, factor):
+        self.factors[col_name] = factor
+        
+    def setup(self):
+        
+        if self.screen is None:
+            self.screen = pd.Index(self.asset_list)
+            
+        self.table = pd.DataFrame(index = self.screen, columns = list( self.factors.keys() ) )
     
-    def calculate_list(self):
+    def calculate_list(self, input_feeds):
         
-        self.pipe = pd.DataFrame(index = self.bars.data.index)
-        self.pipe = self.pipe.reindex(self.screen)
+        for col_name in self.factors:
+            f = self.factors[col_name]
+            datafeed = input_feeds[f.input]
+            data = datafeed.history(self.asset_list, f.window_length)
+            #f.calculate(data)
+            #self.table[col_name] = f.output
+            self.table[col_name] = f.calculate(data)
         
-        
+        self.table = self.table.reindex(self.screen)
         
     def get_output(self):
-        return self.pipe
+        return self.table
         
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
