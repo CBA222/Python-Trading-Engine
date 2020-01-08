@@ -7,6 +7,7 @@ Created on Wed Mar 21 00:07:37 2018
 
 from trader import Trader
 from datafeed import CSVDataFeed
+from commission import IBCommission
 from example_strategies import BuyHold, TestSchedule
 from mom_strategy import MomentumStrat
 
@@ -39,11 +40,12 @@ if __name__ == '__main__':
         data = CSVDataFeed(data_path, trader.events, symbols)
         
         trader.add_data(data)
-        trader.add_strategy(strategy_list[1])
+        trader.set_strategy(strategy_list[1])
         trader.set_run_settings(cash = 50000,
                                 log_orders = False,
                                 start = dt.date(2005, 1, 1),
-                                end = dt.date(2006, 1, 30)
+                                end = dt.date(2005, 1, 30),
+                                commission = IBCommission()
                                 )
         
         trader.run()

@@ -7,6 +7,7 @@ Created on Tue Mar 20 21:53:53 2018
 
 #import Queue
 
+from commission import IBCommission
 from orderhandler import SimpleOrderHandler
 from portfolio import SimplePortfolio
 from pipeline.inputs import PriceInput
@@ -25,12 +26,19 @@ class Trader(object):
     """
     A class managing the event driven loop that simulates the market. 
 
+    The loop reacts to the events in the queue one by one until there are no
+    more events left. 
+
     ...
 
     Methods
     -------
     add_data()
-        Adds a Datafeed to the class
+        Adds a Datafeed to the trader
+    add_strategy()
+        Set the strategy for the trader
+    set_commission()
+        Set the commission for the trader
     
     """   
     
@@ -42,17 +50,22 @@ class Trader(object):
     def add_data(self, data):
         self.data = data
         
-    def add_strategy(self, strategy):
+    def set_strategy(self, strategy):
         self.strategy = strategy
         
-    def set_commission(self, commission):
-        self.commission = commission
-        
-    def set_run_settings(self, cash = DEFAULT_CASH, log_orders = False, start = DEFAULT_START, end = DEFAULT_END):
+    def set_run_settings(
+        self, 
+        cash=DEFAULT_CASH, 
+        log_orders=False, 
+        start=DEFAULT_START, 
+        end=DEFAULT_END, 
+        commission=IBCommission()
+        ):
         self.starting_cash = cash
         self.log_orders = log_orders
         self.start_date = start
         self.end_date = end
+        self.commission = commission
         
     def setup_pipeline_data(self, engine):
         base_price_data = self.data.data
@@ -63,7 +76,8 @@ class Trader(object):
         
     def run(self):
         """
-        Setup and initialize all objects needed to backtest
+        This method sets up/initializes all objects needed to perform the backtest,
+        then runs the backtest.
         
         Datafeed:
             Index data according to start and end dates provided
@@ -86,6 +100,7 @@ class Trader(object):
         
         print('Initialized')
         
+
         self.data.set_index(self.start_date, self.end_date)
         self.pipeline_engine = PipelineEngine(self.data.symbols)
         self.setup_pipeline_data(self.pipeline_engine)
@@ -97,8 +112,7 @@ class Trader(object):
         self.broker.log_orders = self.log_orders
         
         self.strategy.set_params(self.data, self.events, self.portfolio, self.pipeline_engine)
-        self.strategy.master_setup()
-        self.strategy.setup()        
+        self.strategy.master_setup()   
         
         self.pipeline_engine.setup()
         self.portfolio.setup()

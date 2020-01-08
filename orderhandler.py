@@ -13,6 +13,23 @@ import abc
 import math
 
 class OrderHandler(object, metaclass=abc.ABCMeta):
+    """
+    This class is responsible for handling OrderEvents, or orders placed on the
+    simulated market.
+
+    It will fulfill the orders given to it based on current "market" prices,
+    and then signal that those orders have been filled.
+
+    ...
+
+    Methods
+    -------
+    execute_pending()
+        Fills all pending orders
+    send_order()
+        Sends an order to be filled by the broker
+        
+    """
     
     @abc.abstractmethod
     def execute_pending(self, event):

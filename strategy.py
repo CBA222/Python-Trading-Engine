@@ -12,9 +12,26 @@ from event import SignalEvent
 from utils.scheduledfunction import ScheduledFunction
 
 class Strategy(object, metaclass=abc.ABCMeta):
+    """
+
+    Class defining a trading strategy.
+
+    ...
+
+    Attributes
+    ----------
+    scheduled_functions(list)
+        A list of scheduled functions for the strategy
+
+    Methods
+    -------
+    get_signals
+
+    """
     
     def master_setup(self):
         self.scheduled_functions = []    
+        self.setup()
     
     @abc.abstractmethod
     def get_signals(self, event):
@@ -28,21 +45,12 @@ class Strategy(object, metaclass=abc.ABCMeta):
     def setup(self):
         raise NotImplementedError("Should implement setup()")
     
-    def initial_code(self):
-        pass
-    
     def set_params(self, bars, events, portfolio, engine):
         self.bars = bars
         self.symbols = bars.symbols
         self.events = events
         self.portfolio = portfolio
         self.engine = engine
-        
-    def set_start_date(self, date):
-        self.start_date = date
-    
-    def set_end_date(self, date):
-        self.end_date = date
         
     def schedule_function(self, function, sch_rule):
         self.scheduled_functions.append(ScheduledFunction(function, sch_rule))
