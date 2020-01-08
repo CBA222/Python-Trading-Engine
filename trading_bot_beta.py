@@ -43,7 +43,7 @@ if __name__ == '__main__':
         trader.set_run_settings(cash = 50000,
                                 log_orders = False,
                                 start = dt.date(2005, 1, 1),
-                                end = dt.date(2005, 1, 30)
+                                end = dt.date(2006, 1, 30)
                                 )
         
         trader.run()
