@@ -5,7 +5,7 @@ Created on Sun Apr 22 02:13:02 2018
 @author: blins
 """
 
-from progressbar import update_progress
+from .progressbar import update_progress
 import time
 
 

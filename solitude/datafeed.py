@@ -15,9 +15,9 @@ import h5netcdf
 #from abc import ABCMeta, abstractmethod
 import abc
 
-from event import MarketEvent
-from interval import Interval
-from utils.timestarts import get_month_starts, get_week_starts
+from .event import MarketEvent
+from .interval import Interval
+from .utils.timestarts import get_month_starts, get_week_starts
 
 INTERVALS = {
         '1_DAY': Interval('1d'),
@@ -63,36 +63,19 @@ class DataFeed(object, metaclass=abc.ABCMeta):
     def current_date(self):
         raise NotImplementedError("Should implement current_date(()")
 
-        
-class CSVDataFeed(DataFeed):
-    """
-    CSVDataFeed implements the Datafeed class. 
-    """
-    
-    def __init__(self, path, events, symbols, interval = INTERVALS['1_DAY'], 
-                 open = 1, high = 2, low = 3, close = 4, volume = 5):
-        self.path = path
-        self.events = events
-        self.symbols = symbols
+class XArrayDataFeed(DataFeed):
+
+    def __init__(self, interval = INTERVALS['1_DAY']):
         self.fields = ['open','high','low','close','adj_close','volume']
         self.interval = interval
 
         self.keep_iterating = True
         self.data_length = 0
-        self.default_start_date = dt.date(2018, 1, 1)
-        self.default_end_date = dt.date(2018, 3, 1)
-        
-        self.hard_start = dt.date(1995, 1, 1)
-        self.hard_stop = dt.date(2050, 1, 1)
-        self.read_from_csv()
-        
-        
-    def set_start_date(self, date):
-        self.start_date = date
-    
-    def set_end_date(self, date):
-        self.end_date = date
-        
+        # self.read_data()
+
+    def set_events(self, events):
+        self.events = events
+
     def set_index(self, start, end):
         schedule = mcal.get_calendar('NYSE').schedule(start_date=start, end_date=end)
         idx = mcal.date_range(schedule, frequency='1d').to_period('1d').to_timestamp()
@@ -103,8 +86,57 @@ class CSVDataFeed(DataFeed):
         self.starts = dict()
         self.starts['month'] = get_month_starts(self.date_idx)
         self.starts['week'] = get_week_starts(self.date_idx)
+
+    """
+    @abc.abstractmethod
+    def read_data(self, path):
+        raise NotImplementedError("Should implement read_data()")
+    """
+
+    def history(self, assets, fields, bar_count, interval = '1d', convert_to_pandas = True):
         
-    def read_from_csv(self):
+        start = self.data_length - bar_count
+        end = self.data_length
+        
+        hist_data = self.data.isel(datetime=slice(start, end)).sel(fields=fields).sel(assets=assets)
+        return hist_data.to_pandas() if convert_to_pandas else hist_data
+        
+    def current(self, assets, fields, inteval = '1d', convert_to_pandas = True):
+        
+        curr_data = self.data.isel(datetime=self.data_length).sel(fields=fields).sel(assets=assets)
+        return curr_data.to_pandas() if convert_to_pandas else curr_data
+        
+    def current_date(self):
+        return self.date_idx[self.data_length]
+    
+    def update(self):
+        
+        if self.data_length >= self.total_length - 1:
+            self.keep_iterating = False
+        else:
+            self.data_length += 1
+            self.events.put(MarketEvent())
+
+
+class CDFDataFeed(XArrayDataFeed):
+
+    def __init__(self, path, interval=INTERVALS['1_DAY']):
+        XArrayDataFeed.__init__(self, interval)
+
+        self.symbols=[]
+        self.data = xr.open_dataarray(path, engine='h5netcdf')
+
+
+class CSVDataFeed(XArrayDataFeed):
+
+    def __init__(self, path, symbols, interval=INTERVALS['1_DAY']):
+        XArrayDataFeed.__init__(self, interval)
+
+        self.path = path
+        self.symbols = symbols
+        self.hard_start = dt.date(1995, 1, 1)
+        self.hard_stop = dt.date(2050, 1, 1)
+
         not_found = []
         data_list = []
         data_names = []
@@ -132,45 +164,10 @@ class CSVDataFeed(DataFeed):
             self.symbols.remove(s)
             
         self.data = xr.concat(data_list, dim = pd.Index(data_names).set_names('assets'))
-        
-    def history(self, assets, fields, bar_count, interval = '1d', convert_to_pandas = True):
-        
-        #assets = [a for a in assets if a in set(self.symbols)]
-        #fields = [f for f in fields if f in set(self.fields)]
-        
-        start = self.data_length - bar_count
-        end = self.data_length
-        
-        hist_data = self.data.isel(datetime=slice(start, end)).sel(fields=fields).sel(assets=assets)
-        
-        if convert_to_pandas is False:
-            return hist_data
-        else:
-            return hist_data.to_pandas()
-    
-    def current(self, assets, fields, inteval = '1d', convert_to_pandas = True):
-        
-        #assets = [a for a in assets if a in set(self.symbols)]
-        #fields = [f for f in fields if f in set(self.fields)]
-        
-        curr_data = self.data.isel(datetime=self.data_length).sel(fields=fields).sel(assets=assets)
-        
-        if convert_to_pandas is False:
-            return curr_data
-        else:
-            return curr_data.to_pandas()
-        
-    def current_date(self):
-        return self.date_idx[self.data_length]
-    
-    def update(self):
-        
-        if self.data_length >= self.total_length - 1:
-            self.keep_iterating = False
-        else:
-            self.data_length += 1
-            self.events.put(MarketEvent())
-            
-        
 
-    
+        
+#assets = [a for a in assets if a in set(self.symbols)]
+#fields = [f for f in fields if f in set(self.fields)]
+
+#assets = [a for a in assets if a in set(self.symbols)]
+#fields = [f for f in fields if f in set(self.fields)]

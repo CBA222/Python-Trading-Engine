@@ -7,16 +7,17 @@ Created on Tue Mar 20 21:53:53 2018
 
 #import Queue
 
-from commission import IBCommission
-from orderhandler import SimpleOrderHandler
-from portfolio import SimplePortfolio
-from pipeline.inputs import PriceInput
-from pipeline.pipedatafeed import PriceData
-from pipeline.pipelineengine import PipelineEngine
+from .commission import IBCommission
+from .orderhandler import SimpleOrderHandler
+from .portfolio import SimplePortfolio
+from .pipeline.inputs import PriceInput
+from .pipeline.pipedatafeed import PriceData
+from .pipeline.pipelineengine import PipelineEngine
+from .datafeed import CDFDataFeed
 #import bokeh.plotting
 from queue import Queue
 import datetime as dt
-from progressbar import update_progress
+from .progressbar import update_progress
 
 DEFAULT_CASH = 10000000
 DEFAULT_START = dt.date(2003, 1, 1)
@@ -41,18 +42,16 @@ class Trader(object):
         Set the commission for the trader
     
     """   
-    
-    def __init__(self):
+
+    def __init__(self, data_object, strategy):
         self.events = Queue()
         self.starting_cash = DEFAULT_CASH
         self.log_orders = False
-    
-    def add_data(self, data):
-        self.data = data
-        
-    def set_strategy(self, strategy):
+
+        self.data = data_object
+        self.data.set_events(self.events)
         self.strategy = strategy
-        
+
     def set_run_settings(
         self, 
         cash=DEFAULT_CASH, 

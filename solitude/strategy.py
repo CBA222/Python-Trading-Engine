@@ -7,9 +7,9 @@ Created on Tue Mar 20 18:13:50 2018
 
 #from abc import ABCMeta, abstractmethod
 import abc
-from event import SignalEvent
+from .event import SignalEvent
 
-from utils.scheduledfunction import ScheduledFunction
+from .utils.scheduledfunction import ScheduledFunction
 
 class Strategy(object, metaclass=abc.ABCMeta):
     """

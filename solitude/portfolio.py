@@ -7,7 +7,7 @@ Created on Tue Mar 20 21:45:43 2018
 
 import copy
 import pandas_market_calendars as mcal
-from event import OrderEvent
+from .event import OrderEvent
 import math
 import pandas as pd
 

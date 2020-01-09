@@ -6,8 +6,8 @@ Created on Tue Mar 20 23:19:22 2018
 """
 
 from queue import Queue
-from event import FillEvent
-from commission import IBCommission
+from .event import FillEvent
+from .commission import IBCommission
 
 import abc
 import math
