@@ -70,8 +70,6 @@ class XArrayDataFeed(DataFeed):
         self.interval = interval
 
         self.keep_iterating = True
-        self.data_length = 0
-        # self.read_data()
 
     def set_events(self, events):
         self.events = events
@@ -86,12 +84,6 @@ class XArrayDataFeed(DataFeed):
         self.starts = dict()
         self.starts['month'] = get_month_starts(self.date_idx)
         self.starts['week'] = get_week_starts(self.date_idx)
-
-    """
-    @abc.abstractmethod
-    def read_data(self, path):
-        raise NotImplementedError("Should implement read_data()")
-    """
 
     def history(self, assets, fields, bar_count, interval = '1d', convert_to_pandas = True):
         

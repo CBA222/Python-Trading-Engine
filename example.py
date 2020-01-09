@@ -3,7 +3,7 @@ from solitude.trader import Trader
 from test_strategy import TestStrategy
 import datetime as dt
 from solitude.commission import IBCommission
-from solitude.datafeed import CDFDataFeed, GenericDataFeed
+from solitude.datafeed import CDFDataFeed, CSVDataFeed
 import os
 import pandas as pd
 
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     data_path = os.path.join(path, subdirs[idx])
     file = pd.read_csv('tickers.txt', sep=',')
     symbols = set(file['Symbol'].tolist())
-    data = GenericDataFeed(data_path, symbols)
+    data = CSVDataFeed(data_path, symbols)
     """
 
     data = CDFDataFeed('stock_data.nc')
