@@ -9,6 +9,8 @@ import pandas_market_calendars as mcal
 import os, os.path
 import pandas as pd
 import xarray as xr
+from tqdm import tqdm
+import h5netcdf
 
 #from abc import ABCMeta, abstractmethod
 import abc
@@ -81,7 +83,7 @@ class CSVDataFeed(DataFeed):
         self.default_end_date = dt.date(2018, 3, 1)
         
         self.hard_start = dt.date(1995, 1, 1)
-        self.hard_stop = dt.date(2020, 1, 1)
+        self.hard_stop = dt.date(2050, 1, 1)
         self.read_from_csv()
         
         
@@ -110,7 +112,7 @@ class CSVDataFeed(DataFeed):
         schedule = mcal.get_calendar('NYSE').schedule(start_date=self.hard_start, end_date=self.hard_stop)
         date_idx = mcal.date_range(schedule, frequency='1d').to_period('1d').to_timestamp()
         
-        for s in self.symbols:
+        for s in tqdm(self.symbols):
             try:
                 temp_data = pd.read_csv(os.path.join(self.path, '%s.csv' % s),
                     header = None,

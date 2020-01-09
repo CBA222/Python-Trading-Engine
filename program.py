@@ -86,10 +86,7 @@ if __name__ == '__main__':
     parser.add_argument('-ch', dest='cash', type=check_cash, default='50000', help="Backtest starting cash (must be a positive integer)")
 
     args = parser.parse_args()
-
-    print(args.strategy)
-
-
+    
     # Run backtest
 
     trader = Trader()
