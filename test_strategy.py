@@ -1,4 +1,4 @@
-from strategy import Strategy
+from solitude.strategy import Strategy
 
 class TestStrategy(Strategy):
     

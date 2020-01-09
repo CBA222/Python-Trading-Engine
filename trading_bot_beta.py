@@ -5,11 +5,12 @@ Created on Wed Mar 21 00:07:37 2018
 @author: blins
 """
 
-from trader import Trader
-from datafeed import CSVDataFeed
-from commission import IBCommission
+from solitude.trader import Trader
+from solitude.datafeed import CSVDataFeed
+from solitude.commission import IBCommission
 from example_strategies import BuyHold, TestSchedule
-from mom_strategy import MomentumStrat
+from test_strategy import TestStrategy
+#from solitude.mom_strategy import MomentumStrat
 
 import pandas as pd
 import datetime as dt
@@ -17,9 +18,9 @@ import os
 
 if __name__ == '__main__':
     
-    strategy_list = {0: BuyHold(), 
-                     1: MomentumStrat(),
-                     2: TestSchedule()}
+    #strategy_list = {0: BuyHold(), 
+    #                 1: MomentumStrat(),
+    #                 2: TestSchedule()}
     
     path = os.path.dirname(os.path.realpath(__file__))
     subdirs = next(os.walk(path))[1]
@@ -40,7 +41,7 @@ if __name__ == '__main__':
         data = CSVDataFeed(data_path, trader.events, symbols)
         
         trader.add_data(data)
-        trader.set_strategy(strategy_list[1])
+        trader.set_strategy(TestStrategy())
         trader.set_run_settings(cash = 50000,
                                 log_orders = False,
                                 start = dt.date(2005, 1, 1),

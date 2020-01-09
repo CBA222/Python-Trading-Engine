@@ -4,9 +4,9 @@ Created on Sat Apr 21 03:01:12 2018
 
 @author: blins
 """
-from strategy import Strategy
-from sizer import EqualPercentageSizer
-from utils.schedulerule import every_month, every_week, n_months
+from solitude.strategy import Strategy
+from solitude.sizer import EqualPercentageSizer
+from solitude.utils.schedulerule import every_month, every_week, n_months
 
 import pandas as pd
 import datetime as dt
