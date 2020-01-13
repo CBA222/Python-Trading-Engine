@@ -9,7 +9,8 @@ import abc
 
 class Commission(object, metaclass = abc.ABCMeta):
     """
-    Commission Object
+    Commission Class
+
     Purpose is to return the commission value for a certain stock order
     """
     
@@ -18,6 +19,14 @@ class Commission(object, metaclass = abc.ABCMeta):
         pass
 
 class IBCommission(Commission):
+    """
+    Interactive Brokers Commission
+    (https://www.interactivebrokers.com/en/index.php?f=1590&p=stocks1)
+
+    Max commission value: 1% of the total trade value (shares x share price)
+    Min commission value: 1.00
+    Otherwise: 0.005 per share
+    """
     
     def __init__(self):
         self.min = 1.00
@@ -35,6 +44,11 @@ class IBCommission(Commission):
             return base_value
         
 class FixedCommission(Commission):
+    """
+    Fixed Commission
+
+    Charges a fixed commission for every trade, regardless of size or value
+    """
     
     def __init__(self, fixed):
         self.fixed = fixed
@@ -43,6 +57,11 @@ class FixedCommission(Commission):
         return self.fixed
         
 class FixedPercentageCommission(Commission):
+    """
+    Fixed Percentage Commission
+
+    Charges a fixed percentage of the total trade value
+    """
     
     def __init__(self, percent):
         self.percent = percent

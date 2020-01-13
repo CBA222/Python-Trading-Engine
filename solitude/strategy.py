@@ -37,9 +37,8 @@ class Strategy(object, metaclass=abc.ABCMeta):
     def get_signals(self, event):
         raise NotImplementedError("Should implement get_signals()")
     
-    @abc.abstractmethod
     def log_vars(self):
-        raise NotImplementedError("Should implement log_vars()")
+        pass
     
     @abc.abstractmethod
     def setup(self):

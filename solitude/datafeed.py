@@ -70,6 +70,7 @@ class XArrayDataFeed(DataFeed):
         self.interval = interval
 
         self.keep_iterating = True
+        self.data_length = 0
 
     def set_events(self, events):
         self.events = events
