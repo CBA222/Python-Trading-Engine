@@ -6,7 +6,7 @@ Solitude allows you to perform backtests with historical stock data on custom tr
 
 ## Installation
 
-    pip install solitude
+    pip install solitude (under construction)
 
 ## Usage
 
@@ -14,6 +14,8 @@ Solitude allows you to perform backtests with historical stock data on custom tr
 ```python
 from solitude.trader import Trader
 from solitude.datafeed import CDFDatafeed
+from solitude.strategy import Strategy
+from solitude.commission import IBCommission
 import datetime as dt
 
 class TestStrategy(Strategy):
@@ -50,20 +52,10 @@ trader.run()
 trader.results()
 ```
 
-First, you must implement the Strategy class defined in strategy.py (as a subclass) and put this in a seperate file. Examples can be found in the examples folder. 
+## Future Features
 
-### Basic Example
-    solitude -st buy_hold.py -sd 01-01-2014 -ed 05-20-2016
-
-This will run a backtest using the strategy defined in buy_hold.py from January 1st, 2014 to May 20th, 2016.
-
-### Additional Options
-
-The choice of starting cash and what commission to use during the backtest are also customizable using the -ch and -cm flags respectively. 
-
-For example:
-
-    solitude -st strategy.py -sd 01-01-2014 -ed 05-20-2016 -cm IB -ch 500
-
+- Margin trading
+- Options trading
+- Short selling
 
 
